@@ -1,6 +1,7 @@
 package com.runescape.runemetrics.api.service;
 
 import com.runescape.runemetrics.api.model.Quest;
+import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -9,16 +10,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 
 public class RuneMetricsService {
 
+    private static final Logger log = Logger.getLogger(RuneMetricsService.class);
+
     private static final String RUNEMETRICS_QUESTS_URL = "https://apps.runescape.com/runemetrics/quests?user=";
 
     public String getQuestsCompletedByUser(String username) {
-        String httpResponse = createHttpConnection(RUNEMETRICS_QUESTS_URL, username);
+        String httpResponse = createHttpConnection(username);
         return parseCompletedQuestsFromHttpResponse(httpResponse);
     }
 
@@ -26,10 +28,10 @@ public class RuneMetricsService {
         return inputString.replaceAll("\\s", "+");
     }
 
-    private String createHttpConnection(String httpUrl, String parameter) {
+    private String createHttpConnection(String parameter) {
         String encodedParameter = convertWhitespaceForHttpEncoding(parameter);
         try {
-            URL url = new URL(httpUrl + encodedParameter);
+            URL url = new URL(RuneMetricsService.RUNEMETRICS_QUESTS_URL + encodedParameter);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
@@ -46,23 +48,21 @@ public class RuneMetricsService {
             }
 
             conn.disconnect();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Encountered exception whilst trying to create an HTTP connection >", e);
         }
 
         return null;
     }
 
     private String parseCompletedQuestsFromHttpResponse(String jsonInput) {
-        ArrayList<Quest> questList = new ArrayList();
+        ArrayList<Quest> questList = new ArrayList<>();
         try {
             JSONObject jsonResponse = new JSONObject(jsonInput);
             JSONArray arr = jsonResponse.getJSONArray("quests");
 
-            Quest quest = new Quest();
             for (int i = 0; i < arr.length(); i++) {
+                Quest quest = new Quest();
                 quest.setTitle(arr.getJSONObject(i).getString("title"));
                 quest.setStatus(arr.getJSONObject(i).getString("status"));
                 quest.setDifficulty(arr.getJSONObject(i).getInt("difficulty"));
@@ -75,7 +75,7 @@ public class RuneMetricsService {
                 }
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            log.error("Encountered an error when trying to parse JSON from HTTP response >", e);
         }
 
         return questList.toString();

@@ -1,7 +1,6 @@
 package com.runescape.runemetrics.api.controller;
 
 import com.runescape.runemetrics.api.service.RuneMetricsService;
-import org.json.JSONException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +13,7 @@ public class RuneMetricsRestController {
     private RuneMetricsService runeMetricsService = new RuneMetricsService();
 
     @GetMapping(value = "/{username}")
-    public String getQuestsCompletedByUser(@PathVariable("/{username}") String username) {
+    public String getQuestsCompletedByUser(@PathVariable String username) {
         return runeMetricsService.getQuestsCompletedByUser(username);
     }
 
