@@ -25,6 +25,11 @@ public class RuneMetricsService {
         return parseQuestsCompletedByUser(httpResponse).toString();
     }
 
+    public int getTotalNumberOfCompletedQuests(String username) {
+        String httpResponse = createHttpConnection(username);
+        return parseQuestsCompletedByUser(httpResponse).size();
+    }
+
     private List<Quest> parseQuestsCompletedByUser(String jsonInput) {
         List<Quest> allQuests = parseAllQuests(jsonInput);
         List<Quest> completedQuests = new ArrayList<>();
