@@ -17,4 +17,10 @@ public class RuneMetricsRestController {
         return runeMetricsService.getQuestsCompletedByUser(username);
     }
 
+    // TODO: Find a way to pass quest title as a pre-defined field from a list of quest titles
+    @GetMapping(value = "/{username}/{questTitle}")
+    public String getQuestEligibility(@PathVariable String username, @PathVariable String questTitle) {
+        return runeMetricsService.getQuestEligibility(username, questTitle);
+    }
+
 }

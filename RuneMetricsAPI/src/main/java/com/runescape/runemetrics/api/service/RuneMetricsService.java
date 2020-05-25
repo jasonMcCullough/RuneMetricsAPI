@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class RuneMetricsService {
 
@@ -21,7 +22,66 @@ public class RuneMetricsService {
 
     public String getQuestsCompletedByUser(String username) {
         String httpResponse = createHttpConnection(username);
-        return parseCompletedQuestsFromHttpResponse(httpResponse);
+        return parseQuestsCompletedByUser(httpResponse).toString();
+    }
+
+    private List<Quest> parseQuestsCompletedByUser(String jsonInput) {
+        List<Quest> allQuests = parseAllQuests(jsonInput);
+        List<Quest> completedQuests = new ArrayList<>();
+
+        for(Quest quest: allQuests) {
+            if(quest.getStatus().equals("COMPLETED")) {
+                completedQuests.add(quest);
+            }
+        }
+
+        return completedQuests;
+    }
+
+    public String getQuestEligibility(String username, String questTitle) {
+        String httpResponse = createHttpConnection(username);
+        return parseQuestEligibility(questTitle, httpResponse);
+    }
+
+    private String parseQuestEligibility(String questTitle, String jsonInput) {
+        List<Quest> allQuests = parseAllQuests(jsonInput);
+
+        if(parseAllQuests(jsonInput).toString().contains(questTitle)) {
+            for (Quest quest : allQuests) {
+                if (quest.getTitle().equalsIgnoreCase(questTitle) && quest.isUserEligible()) {
+                    if (quest.getStatus().equals("COMPLETED")) {
+                        return "You have already completed this quest!";
+                    } else if (quest.getStatus().equals("STARTED") || quest.getStatus().equals("NOT_STARTED")) {
+                        return "You are eligible to complete this quest!";
+                    }
+                }
+            }
+            return "You are not yet eligible to complete this quest!";
+        } else {
+            return "Something went wrong, did you enter a valid username and quest title?";
+        }
+    }
+
+    private List<Quest> parseAllQuests(String jsonInput) {
+        List<Quest> questList = new ArrayList<>();
+        try {
+            JSONObject jsonResponse = new JSONObject(jsonInput);
+            JSONArray arr = jsonResponse.getJSONArray("quests");
+
+            for (int i = 0; i < arr.length(); i++) {
+                Quest quest = new Quest();
+                quest.setTitle(arr.getJSONObject(i).getString("title"));
+                quest.setStatus(arr.getJSONObject(i).getString("status"));
+                quest.setDifficulty(arr.getJSONObject(i).getInt("difficulty"));
+                quest.setMembers(arr.getJSONObject(i).getBoolean("members"));
+                quest.setQuestPoints(arr.getJSONObject(i).getInt("questPoints"));
+                quest.setUserEligible(arr.getJSONObject(i).getBoolean("userEligible"));
+                questList.add(quest);
+            }
+        } catch (JSONException e) {
+            log.error("Encountered an error when trying to parse JSON from HTTP response >", e);
+        }
+        return questList;
     }
 
     private String convertWhitespaceForHttpEncoding(String inputString) {
@@ -51,34 +111,7 @@ public class RuneMetricsService {
         } catch (IOException e) {
             log.error("Encountered exception whilst trying to create an HTTP connection >", e);
         }
-
         return null;
-    }
-
-    private String parseCompletedQuestsFromHttpResponse(String jsonInput) {
-        ArrayList<Quest> questList = new ArrayList<>();
-        try {
-            JSONObject jsonResponse = new JSONObject(jsonInput);
-            JSONArray arr = jsonResponse.getJSONArray("quests");
-
-            for (int i = 0; i < arr.length(); i++) {
-                Quest quest = new Quest();
-                quest.setTitle(arr.getJSONObject(i).getString("title"));
-                quest.setStatus(arr.getJSONObject(i).getString("status"));
-                quest.setDifficulty(arr.getJSONObject(i).getInt("difficulty"));
-                quest.setMembers(arr.getJSONObject(i).getBoolean("members"));
-                quest.setQuestPoints(arr.getJSONObject(i).getInt("questPoints"));
-                quest.setUserEligible(arr.getJSONObject(i).getBoolean("userEligible"));
-
-                if (quest.getStatus().equals("COMPLETED")) {
-                    questList.add(quest);
-                }
-            }
-        } catch (JSONException e) {
-            log.error("Encountered an error when trying to parse JSON from HTTP response >", e);
-        }
-
-        return questList.toString();
     }
 
 }
